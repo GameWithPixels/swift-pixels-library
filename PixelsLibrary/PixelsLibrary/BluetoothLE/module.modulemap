@@ -1,0 +1,6 @@
+
+module Bridging {
+    header "SGBleCentralManagerDelegate.h"
+    header "SGBlePeripheralQueue.h"
+    export *
+}
