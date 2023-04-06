@@ -191,9 +191,9 @@ NS_ASSUME_NONNULL_BEGIN
 //! @{
 
 /**
- * @brief Clear the queue of pending request and cancel the running request.
+ * @brief Cancel any pending or running request.
  */
-- (void)cancelQueue;
+- (void)cancelAll;
 
 //! @}
 

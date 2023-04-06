@@ -193,8 +193,8 @@ public struct IAmADie: PixelMessage {
     /// Current roll state.
     public var rollState = PixelRollState.unknown
 
-    /// Face number (if applicable), starts at 0.
-    public var rollFaceIndex: UInt8 = 0
+    /// Face index (if applicable), starts at 0.
+    public var currentFace: UInt8 = 0
 
     // Battery level
 

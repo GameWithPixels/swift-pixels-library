@@ -16,7 +16,6 @@ public enum PixelStatus {
     case connecting
     case identifying
     case ready
-    case disconnecting
 }
 
 fileprivate typealias VCC = CheckedContinuation<Void, Error>
@@ -112,8 +111,8 @@ public class Pixel: PixelInfo, ObservableObject {
     
     /// Asynchronously tries to connect to the Pixel. Throws on connection error.
     public func connect() async throws {
-        // TODO add timeout
-        // First connect to die
+        // TODO implement connection timeout
+        // First connect to the peripheral
         try await withCheckedThrowingContinuation { (cont: VCC) in
             _peripheral.queueConnect(withServices: [PixelBleUuids.service]) { error in
                 if let error {
@@ -123,34 +122,53 @@ public class Pixel: PixelInfo, ObservableObject {
                 }
             }
         }
-        // And then setup communications
-        do {
-            try await internalSetup()
-            if status == .identifying {
+
+        // Then prepare our instance for communications with the Pixel
+        if status == .connecting {
+            status = .identifying
+
+            do {
+                // Setup our instance
+                try await internalSetup()
+
+                // Contact Pixel to retreive info
                 _ = try await self.sendMessage(ofType: .whoAreYou, andWaitForResponse: .iAmADie)
+
+                // Update status
+                if status == .identifying {
+                    print("Pixel \(name) is connected and ready")
+                    status = .ready
+                }
+            } catch {
+                try? await disconnect()
+                throw error
             }
-        } catch {
-            try? await disconnect()
-            throw error
+        } else if status == .identifying {
+            // TODO connection timeout + subscribe to status changes instead of polling
+            while true {
+                try await Task.sleep(nanoseconds: 10_000_000) // 10ms
+                if status != .identifying {
+                    break
+                }
+            }
         }
-        // Finally update status
-        if status == .identifying {
-            print("Pixel \(name) is ready")
-            status = .ready
-        } else {
+        
+        // Check if something happened during the connection process
+        if status != .ready {
             throw PixelError.connectionCanceled
         }
     }
     
     /// Cancel all on-going requests and immediately disconnects the Pixel.
     public func disconnect() async throws {
+        let pixelName = name
         try await withCheckedThrowingContinuation { (cont: VCC) in
             // Cancel on-going requests
-            _peripheral.cancel()
-            // And the disconnect
-            _peripheral.queueDisconnect() { [weak self] error in
+            _peripheral.cancelAll()
+            // And disconnect
+            _peripheral.queueDisconnect() { error in
                 if let error {
-                    print("Pixel \(self?.name ?? "deallocated") error: on disconnection, got \(error)")
+                    print("Pixel \(pixelName) error: on disconnection, got \(error)")
                     cont.resume(throwing: error)
                 } else {
                     cont.resume()
@@ -294,15 +312,15 @@ public class Pixel: PixelInfo, ObservableObject {
             status = .connecting
             break
         case .connected:
-            break
+            fallthrough
         case .ready:
-            status = .identifying
-            break
-        case .disconnecting:
-            status = .disconnecting
+            // The setup is done directly in the connect() function since
+            // we don't have an auto-reconnect feature (yet)
             break
         case .failedToConnect:
             print("Pixel \(name) error: failed to connect with reason \(reason)")
+            fallthrough
+        case .disconnecting:
             fallthrough
         case .disconnected:
             print("Pixel \(name) disconnected")
@@ -325,10 +343,11 @@ public class Pixel: PixelInfo, ObservableObject {
             _writeCharacteristic = write
 
             // Subscribe to notify characteristic
+            let pixelName = name
             try await withCheckedThrowingContinuation { (cont: VCC) in
                 _peripheral.queueSetNotifyValue(for: notify) { [weak self] characteristic, error in
                     if let error {
-                        print("Pixel \(self?.name ?? "deallocated") error: on notified value, got \(error)")
+                        print("Pixel \(pixelName) error: on notified value, got \(error)")
                     } else if let data = characteristic.value {
                         Task { @MainActor [weak self] in
                             await self?.processMessage(data: data)
@@ -412,13 +431,17 @@ public class Pixel: PixelInfo, ObservableObject {
                     self.ledCount = Int(iAmADie.ledCount)
                     self.designAndColor = iAmADie.designAndColor
                     self.firmwareDate = Date(timeIntervalSince1970: TimeInterval(iAmADie.buildTimestamp))
+                    self.batteryLevel = Int(iAmADie.batteryLevelPercent)
+                    self.isCharging = Pixel.isChargingOrDone(iAmADie.batteryState)
+                    self.rollState = iAmADie.rollState
+                    self.currentFace = Int(iAmADie.currentFace + 1)
                     break
                 case let roll as RollState:
                     self.currentFace = Int(roll.faceIndex) + 1
                     self.rollState = roll.state
                 case let battery as BatteryLevel:
                     self.batteryLevel = Int(battery.levelPercent)
-                    self.isCharging = battery.state == .charging || battery.state == .trickleCharge || battery.state == .done
+                    self.isCharging = Pixel.isChargingOrDone(battery.state)
                     break
                 case let rssi as Rssi:
                     self.rssi = Int(rssi.value)
@@ -445,5 +468,9 @@ public class Pixel: PixelInfo, ObservableObject {
             }
         }
         return nil
+    }
+    
+    private static func isChargingOrDone(_ state:PixelBatteryState) -> Bool {
+       return state == .charging || state == .trickleCharge || state == .done
     }
 }

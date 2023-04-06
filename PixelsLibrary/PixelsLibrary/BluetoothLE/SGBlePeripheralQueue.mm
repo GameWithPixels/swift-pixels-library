@@ -279,15 +279,19 @@
      completionHandler:completionHandler];
 }
 
-- (void)cancelQueue
+- (void)cancelAll
 {
-    NSLog(@">> cancelQueue");
+    NSLog(@">> cancelAll");
     
+    NSArray<SGBleRequest *> *requestsToCancel = nil;
     @synchronized (_pendingRequests)
     {
-        // Clear the queue
-        //TODO notify cancellation
-        [_pendingRequests removeAllObjects];
+        // First clear the queue
+        if (_pendingRequests.count > 0)
+        {
+            requestsToCancel = [[NSArray<SGBleRequest *> alloc] initWithArray:_pendingRequests];
+            [_pendingRequests removeAllObjects];
+        }
     }
     
     dispatch_async(_queue, ^{
@@ -304,6 +308,12 @@
             {
                 NSLog(@">> Queue canceled while connecting => cancelling connection");
                 [self internalDisconnect:SGBleConnectionEventReasonCanceled];
+            }
+            
+            // Cancel pending requests
+            for (SGBleRequest *request in requestsToCancel)
+            {
+                [request notifyResult:SGBleCanceledError];
             }
         }
     });
@@ -378,12 +388,7 @@
         }
         else
         {
-            // Any other request other than connect are only valid when peripheral is connected
-            NSError *error = SGBleInvalidCallError;
-            if ((state == CBPeripheralStateConnected) || (request.type == SGBleRequestTypeConnect))
-            {
-                error = [request execute];
-            }
+            NSError *error = [request execute];
             if (error)
             {
                 [self qReportRequestResult:error forRequestType:request.type];
