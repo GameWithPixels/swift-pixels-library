@@ -41,6 +41,6 @@ public protocol PixelInfo {
     /// The Pixel roll state.
     var rollState: PixelRollState { get }
 
-    /// The Pixel face value that is currently up.
+    /// The Pixel face value that is currently facing up.
     var currentFace: Int { get }
 }

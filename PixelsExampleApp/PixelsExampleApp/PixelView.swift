@@ -27,7 +27,7 @@ struct PixelView: View {
                         Task {
                             do {
                                 try await pixel.connect()
-                                try await pixel.reportRssi()
+                                try await pixel.reportRSSI()
                             } catch {
                                 lastError = error
                             }

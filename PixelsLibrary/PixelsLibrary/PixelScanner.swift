@@ -22,12 +22,37 @@ fileprivate struct ServiceData: Codable, Sendable {
     var firmwareDate: UInt32 = 0
 }
 
+/// A protocol that provides updates on the use of a Pixels die.
+public protocol PixelScannerDelegate: AnyObject {
+    /// Tells the delegate that the scanner bluetooth state changed.
+    /// Be sure to wait for the state to be ``.poweredOn`` before initiating a scan.
+    func scanner(_ scanner: PixelScanner, didChangeBluetoothState state: CBManagerState)
+
+    /// Tells the delegate that the scanner either started or stopped scanning for Pixels dice.
+    func scanner(_ scanner: PixelScanner, didChangeScanningState isScanning: Bool)
+
+    /// Tells the delegate that the scanner discovered a new Pixels die.
+    /// - Remark: ``scanner(_:didUpdateScannedPixel:)`` is also invoked on such an event.
+    func scanner(_ scanner: PixelScanner, didDiscoverPixel scannedPixel: ScannedPixel)
+
+    /// Tells the delegate that the scanner either discovered a new Pixels die or got new information about an already discovered one.
+    func scanner(_ scanner: PixelScanner, didUpdateScannedPixel scannedPixel: ScannedPixel)
+}
+
+public extension PixelScannerDelegate {
+    func scanner(_ scanner: PixelScanner, didChangeBluetoothState state: CBManagerState) {}
+    func scanner(_ scanner: PixelScanner, didChangeScanningState isScanning: Bool) {}
+    func scanner(_ scanner: PixelScanner, didDiscoverPixel scannedPixel: ScannedPixel) {}
+    func scanner(_ scanner: PixelScanner, didUpdateScannedPixel scannedPixel: ScannedPixel) {}
+}
+
 /// Represents a Bluetooth scanner for Pixels dice.
 ///
 /// Call ``startScan(keepPrevious:)`` to initiate a scan and
 /// ``stopScan()`` to interrupt it.
 /// All Pixels dice that are turned on, within range and not yet connected
 /// should appear in the ``scannedPixels`` array after scanning for a few seconds.
+/// Be sure to wait for the scanner to have ``isBluetoothReady`` set to true before initiating a scan.
 ///
 /// Because scanning for Bluetooth devices can impact battery life,
 /// it is recommended to only turn on scanning when necessary.
@@ -38,10 +63,11 @@ fileprivate struct ServiceData: Codable, Sendable {
 ///           and its methods should be called on the main thread too.
 @MainActor
 public class PixelScanner: ObservableObject {
-    /// The shared singleton object.
-    public static let shared = PixelScanner()
-
+    // Our Central instance to access BLE.
     private var _central: SGBleCentralManagerDelegate
+    
+    /// The delegate object specified to receive property change events.
+    public weak var delegate: PixelScannerDelegate?;
 
     /// Indicates the state of the CoreBluetooth manager.
     ///
@@ -59,19 +85,26 @@ public class PixelScanner: ObservableObject {
 
     /// The list of discovered Pixels during scans.
     @Published public private(set) var scannedPixels: [ScannedPixel] = []
-    
+
+    /// The shared singleton object.
+    public static let shared = PixelScanner()
+
     /// Initialize the instance.
     private init() {
         weak var weakSelf: PixelScanner? = nil
         _central = SGBleCentralManagerDelegate(stateUpdateHandler: { state in
-            DispatchQueue.main.async {
-                weakSelf?.bluetoothState = state
+            Task { @MainActor in
+                if let self = weakSelf {
+                    self.bluetoothState = state
+                    self.delegate?.scanner(self, didChangeBluetoothState: state)
+                    self.setIsScanning(self._central.centralManager.isScanning)
+                }
             }
         })
         bluetoothState = _central.centralManager.state
-        weakSelf = self
+        weakSelf = self;
         _central.peripheralDiscoveryHandler = { peripheral, advertisementData, rssi in
-            DispatchQueue.main.async {  [weak self] in
+            Task { @MainActor [weak self] in
                 let manufacturerData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data
                 let localName = advertisementData[CBAdvertisementDataLocalNameKey] as? String
                 let servicesData = advertisementData[CBAdvertisementDataServiceDataKey] as? [CBUUID:Data]
@@ -97,9 +130,14 @@ public class PixelScanner: ObservableObject {
                         }) {
                             // Update known Pixel
                             self.scannedPixels[index] = scannedPixel
+                            // Notify the delegate
+                            self.delegate?.scanner(self, didUpdateScannedPixel: scannedPixel);
                         } else {
                             // Add new Pixel to list
                             self.scannedPixels.append(scannedPixel)
+                            // Notify the delegate
+                            self.delegate?.scanner(self, didDiscoverPixel: scannedPixel);
+                            self.delegate?.scanner(self, didUpdateScannedPixel: scannedPixel);
                         }
                     } catch {
                         print("Error reading Pixel advertisement data: \(error)")
@@ -127,25 +165,30 @@ public class PixelScanner: ObservableObject {
             clear()
         }
         _central.centralManager.scanForPeripherals(withServices: [PixelBleUuids.service]);
-        let isScanning = _central.centralManager.isScanning
-        DispatchQueue.main.async { [weak self] in
-            self?.isScanning = isScanning
-        }
+        setIsScanning(_central.centralManager.isScanning)
     }
     
     /// Stops scanning for Pixels.
     @MainActor
     public func stopScan() {
         _central.centralManager.stopScan()
-        DispatchQueue.main.async { [weak self] in
-            self?.isScanning = false
-        }
+        setIsScanning(false);
     }
     
     /// Clear the list of ``scannedPixels``.
     @MainActor
     public func clear() {
         scannedPixels.removeAll();
+    }
+    
+    /// Update "IsScanning" property and notify delegate
+    private func setIsScanning(_ isScanning: Bool) {
+        Task { @MainActor [weak self] in
+            if let self, self.isScanning != isScanning {
+                self.isScanning = isScanning
+                self.delegate?.scanner(self, didChangeScanningState: isScanning)
+            }
+        }
     }
 
     //

@@ -194,7 +194,7 @@ public struct IAmADie: PixelMessage {
     public var rollState = PixelRollState.unknown
 
     /// Face index (if applicable), starts at 0.
-    public var currentFace: UInt8 = 0
+    public var currentFaceIndex: UInt8 = 0
 
     // Battery level
 
@@ -251,7 +251,7 @@ public struct BatteryLevel: PixelMessage {
 }
 
 /// Message send to a Pixel to configure RSSI reporting.
-public struct RequestRssi: PixelMessage {
+public struct RequestRSSI: PixelMessage {
     public internal(set) var type = MessageType.requestRssi;
 
     /// Telemetry mode used for sending the RSSI update(s).
@@ -263,7 +263,7 @@ public struct RequestRssi: PixelMessage {
 }
 
 /// Message send by a Pixel to notify of its measured RSSI.
-public struct Rssi: PixelMessage {
+public struct RSSI: PixelMessage {
     public internal(set) var type = MessageType.rssi;
 
     /// The RSSI value, in dBm.
@@ -282,9 +282,9 @@ func getMessageClass(fromType messageType: MessageType) -> PixelMessage.Type? {
     case .batteryLevel:
         return BatteryLevel.self
     case .requestRssi:
-        return RequestRssi.self
+        return RequestRSSI.self
     case .rssi:
-        return Rssi.self
+        return RSSI.self
     default:
         return nil
     }

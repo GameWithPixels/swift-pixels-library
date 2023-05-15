@@ -27,6 +27,46 @@ fileprivate struct MessageSubscription {
     let handler: MessageHandler
 }
 
+/// A protocol that provides updates on the use of a Pixels die.
+public protocol PixelDelegate: AnyObject {
+    /// Tells the delegate that the connection status of the Pixels die changed.
+    func pixel(_ pixel: Pixel, didChangeStatus status: PixelStatus)
+
+    /// Tells the delegate that the Pixels die got a new firmware
+    func pixel(_ pixel: Pixel, didChangeFirmwareDate firmwareDate: Date)
+
+    /// Tells the delegate that the measured RSSI with the Pixels die changed.
+    /// - Remark: Call ``Pixel/reportRSSI(activate:minimumInterval:)`` to start monitoring RSSI.
+    func pixel(_ pixel: Pixel, didChangeRSSI rssi: Int)
+
+    /// Tells the delegate that the Pixels die battery level changed.
+    func pixel(_ pixel: Pixel, didChangeBatteryLevel batteryLevel: Int)
+
+    /// Tells the delegate that the Pixels die charging status changed.
+    func pixel(_ pixel: Pixel, didChangeChargingState isCharging: Bool)
+
+    /// Tells the delegate that the Pixels die roll state or the current face changed.
+    func pixel(_ pixel: Pixel, didChangeRollState rollState: PixelRollState, withFace face: Int)
+
+    /// Tells the delegate that the Pixels die completed a roll.
+    func pixel(_ pixel: Pixel, didRollOnFace face: Int)
+
+    /// Tells the delegate that the Pixels die instance received a message.
+    /// In other words the message was send by the actual die and received by the Pixel object.
+    func pixel(_ pixel: Pixel, didReceiveMessage message: PixelMessage)
+}
+
+public extension PixelDelegate {
+    func pixel(_ pixel: Pixel, didChangeStatus status: PixelStatus) {}
+    func pixel(_ pixel: Pixel, didChangeFirmwareDate firmwareDate: Date) {}
+    func pixel(_ pixel: Pixel, didChangeRSSI rssi: Int) {}
+    func pixel(_ pixel: Pixel, didChangeBatteryLevel batteryLevel: Int) {}
+    func pixel(_ pixel: Pixel, didChangeChargingState isCharging: Bool) {}
+    func pixel(_ pixel: Pixel, didChangeRollState rollState: PixelRollState, withFace face: Int) {}
+    func pixel(_ pixel: Pixel, didRollOnFace face: Int) {}
+    func pixel(_ pixel: Pixel, didReceiveMessage message: PixelMessage) {}
+}
+
 /// Represents a Pixels die.
 ///
 /// Most of its methods require the instance to be connected to the Pixel device.
@@ -44,6 +84,9 @@ public class Pixel: PixelInfo, ObservableObject {
 
     // A published for received messages
     private let _messagesPublisher = PassthroughSubject<PixelMessage, PixelError>()
+    
+    /// The delegate object specified to receive property change events.
+    public weak var delegate: PixelDelegate?;
 
     /// Gets the Pixel last known connection status.
     @Published
@@ -67,6 +110,7 @@ public class Pixel: PixelInfo, ObservableObject {
     public private(set) var designAndColor: PixelDesignAndColor
     @Published
     public private(set) var firmwareDate: Date
+    /// - Remark: Call ``reportRssi(activate:minimumInterval:)`` to start monitoring RSSI.
     @Published
     public private(set) var rssi: Int
     @Published
@@ -125,21 +169,23 @@ public class Pixel: PixelInfo, ObservableObject {
 
         // Then prepare our instance for communications with the Pixel
         if status == .connecting {
-            status = .identifying
+            // Notify we're connected and proceeding to die identification
+            setStatus(.identifying)
 
             do {
                 // Setup our instance
                 try await internalSetup()
 
                 // Contact Pixel to retreive info
-                _ = try await self.sendMessage(ofType: .whoAreYou, andWaitForResponse: .iAmADie)
+                _ = try await sendMessage(ofType: .whoAreYou, andWaitForResponse: .iAmADie)
 
                 // Update status
                 if status == .identifying {
                     print("Pixel \(name) is connected and ready")
-                    status = .ready
+                    setStatus(.ready)
                 }
             } catch {
+                // Disconnect but ignore any error
                 try? await disconnect()
                 throw error
             }
@@ -153,7 +199,7 @@ public class Pixel: PixelInfo, ObservableObject {
             }
         }
         
-        // Check if something happened during the connection process
+        // Check if a status change occurred during the connection process
         if status != .ready {
             throw PixelError.connectionCanceled
         }
@@ -276,8 +322,8 @@ public class Pixel: PixelInfo, ObservableObject {
     ///   - activate: Whether to turn or turn off this feature.
     ///   - minimumInterval: The minimum time interval in seconds
     ///                      between two RSSI updates.
-    public func reportRssi(activate: Bool = true, minimumInterval: Int = 5000) async throws {
-        try await sendMessage(RequestRssi(requestMode: activate ? .automatic : .off, minInterval: UInt16(minimumInterval)))
+    public func reportRSSI(activate: Bool = true, minimumInterval: Int = 5000) async throws {
+        try await sendMessage(RequestRSSI(requestMode: activate ? .automatic : .off, minInterval: UInt16(minimumInterval)))
     }
     
     /// Requests Pixel to turn itself off.
@@ -309,7 +355,7 @@ public class Pixel: PixelInfo, ObservableObject {
     private func onConnectionEvent(_ connEvent: SGBleConnectionEvent, reason: SGBleConnectionEventReason) async {
         switch connEvent {
         case .connecting:
-            status = .connecting
+            setStatus(.connecting)
             break
         case .connected:
             fallthrough
@@ -324,10 +370,20 @@ public class Pixel: PixelInfo, ObservableObject {
             fallthrough
         case .disconnected:
             print("Pixel \(name) disconnected")
-            status = .disconnected
+            setStatus(.disconnected)
             break
         @unknown default:
             fatalError()
+        }
+    }
+    
+    /// Update status property and notify delegate
+    private func setStatus(_ status: PixelStatus) {
+        if self.status != status {
+            // Update status
+            self.status = status
+            // And notify delegate
+            delegate?.pixel(self, didChangeStatus: status)
         }
     }
     
@@ -406,7 +462,7 @@ public class Pixel: PixelInfo, ObservableObject {
         // to be sure to not miss it in case of a race condition
         async let msg = waitForMessage(ofType: responseType)
         // Send data
-        try await self.send(data)
+        try await send(data)
         // And wait for the expected response
         return try await msg
     }
@@ -419,7 +475,10 @@ public class Pixel: PixelInfo, ObservableObject {
             if data.count == 1 {
                 let type = MessageType(rawValue: data[0])
                 if let type, let msg = GenericMessage(type: type) {
+                    // Send message to pub
                     _messagesPublisher.send(msg)
+                    // And notify delegate
+                    delegate?.pixel(self, didReceiveMessage: msg)
                 } else {
                     print("Pixel \(name) error: unknown message type is \(data[0])")
                 }
@@ -427,30 +486,74 @@ public class Pixel: PixelInfo, ObservableObject {
             else if let msg = Pixel.decodeMessage(data: data) {
                 switch (msg){
                 case let iAmADie as IAmADie:
-                    self.pixelId = iAmADie.pixelId
-                    self.ledCount = Int(iAmADie.ledCount)
-                    self.designAndColor = iAmADie.designAndColor
-                    self.firmwareDate = Date(timeIntervalSince1970: TimeInterval(iAmADie.buildTimestamp))
-                    self.batteryLevel = Int(iAmADie.batteryLevelPercent)
-                    self.isCharging = Pixel.isChargingOrDone(iAmADie.batteryState)
-                    self.rollState = iAmADie.rollState
-                    self.currentFace = Int(iAmADie.currentFace + 1)
+                    let newFwDate = Date(timeIntervalSince1970: TimeInterval(iAmADie.buildTimestamp))
+                    let dateChanged = firmwareDate != newFwDate
+                    let levelChanged = batteryLevel != iAmADie.batteryLevelPercent
+                    let newIsCharging = Pixel.isChargingOrDone(iAmADie.batteryState)
+                    let chargingChanged = isCharging != newIsCharging
+                    // Update properties
+                    pixelId = iAmADie.pixelId
+                    ledCount = Int(iAmADie.ledCount)
+                    designAndColor = iAmADie.designAndColor
+                    firmwareDate = newFwDate
+                    batteryLevel = Int(iAmADie.batteryLevelPercent)
+                    isCharging = Pixel.isChargingOrDone(iAmADie.batteryState)
+                    rollState = iAmADie.rollState
+                    currentFace = Int(iAmADie.currentFaceIndex + 1)
+                    // And notify delegate
+                    if dateChanged {
+                        delegate?.pixel(self, didChangeFirmwareDate: firmwareDate)
+                    }
+                    if levelChanged {
+                        delegate?.pixel(self, didChangeBatteryLevel: batteryLevel)
+                    }
+                    if chargingChanged {
+                        delegate?.pixel(self, didChangeChargingState: isCharging)
+                    }
+                    // Skip sending roll state to delegate as we didn't get the data
+                    // from an actual roll event
                     break
                 case let roll as RollState:
-                    self.currentFace = Int(roll.faceIndex) + 1
-                    self.rollState = roll.state
+                    // Update properties
+                    currentFace = Int(roll.faceIndex) + 1
+                    rollState = roll.state
+                    // And always notify delegate of roll events
+                    delegate?.pixel(self, didChangeRollState: rollState, withFace: currentFace)
+                    if rollState == .onFace {
+                        delegate?.pixel(self, didRollOnFace: currentFace)
+                    }
                 case let battery as BatteryLevel:
-                    self.batteryLevel = Int(battery.levelPercent)
-                    self.isCharging = Pixel.isChargingOrDone(battery.state)
+                    let levelChanged = batteryLevel != battery.levelPercent
+                    let newIsCharging = Pixel.isChargingOrDone(battery.state)
+                    let chargingChanged = isCharging != newIsCharging
+                    // Update properties
+                    batteryLevel = Int(battery.levelPercent)
+                    isCharging = newIsCharging
+                    // And notify delegate
+                    if levelChanged {
+                        delegate?.pixel(self, didChangeBatteryLevel: batteryLevel)
+                    }
+                    if chargingChanged {
+                        delegate?.pixel(self, didChangeChargingState: isCharging)
+                    }
                     break
-                case let rssi as Rssi:
-                    self.rssi = Int(rssi.value)
+                case let rssiMsg as RSSI:
+                    let changed = rssi != rssiMsg.value
+                    // Update properties
+                    rssi = Int(rssiMsg.value)
+                    // And notify delegate
+                    if changed {
+                        delegate?.pixel(self, didChangeRSSI: rssi)
+                    }
                     break
                 default:
                     // Nothing to do
                     break
                 }
-                self._messagesPublisher.send(msg)
+                // Send message to pub
+                _messagesPublisher.send(msg)
+                // And notify delegate
+                delegate?.pixel(self, didReceiveMessage: msg)
             } else {
                 print("Pixel error: failed to decode message of type \(data[0])")
             }
@@ -458,7 +561,7 @@ public class Pixel: PixelInfo, ObservableObject {
     }
 
     /// Decode the message data.
-    /// 
+    ///
     /// - Parameter data: Message data.
     /// - Returns: The decoded message or nil.
     private static func decodeMessage(data: Data) -> PixelMessage? {
