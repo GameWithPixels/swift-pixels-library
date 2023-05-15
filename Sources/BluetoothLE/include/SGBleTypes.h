@@ -96,6 +96,25 @@ typedef NS_ENUM(NSInteger, SGBleConnectionEventReason)
 };
 
 /**
+ * @brief Peripheral request error codes.
+ * @ingroup Apple_Objective-C
+ */
+typedef NS_ENUM(NSInteger, SGBlePeripheralRequestError)
+{
+    /// Peripheral got disconnected while executing request.
+    SGBlePeripheralRequestErrorDisconnected,
+    
+    /// Peripheral not in proper state to execute request.
+    SGBlePeripheralRequestErrorInvalidCall,
+    
+    /// Peripheral request has some invalid parameters.
+    SGBlePeripheralRequestErrorInvalidParameters,
+    
+    /// Peripheral request got canceled.
+    SGBlePeripheralRequestErrorCanceled,
+};
+
+/**
  * @brief Peripheral discovery handler.
  * @ingroup Apple_Objective-C
  */

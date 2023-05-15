@@ -1,4 +1,5 @@
 #import "SGBleUtils.h"
+#import "SGBleTypes.h"
 
 dispatch_queue_t sgBleGetSerialQueue()
 {

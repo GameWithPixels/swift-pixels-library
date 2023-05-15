@@ -12,8 +12,7 @@
 		0930FB7229D5EBD800E196BC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0930FB7129D5EBD800E196BC /* Assets.xcassets */; };
 		0930FB7629D5EBD800E196BC /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0930FB7529D5EBD800E196BC /* Preview Assets.xcassets */; };
 		09B95A6529D6237B00E1E07D /* PixelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B95A6429D6237B00E1E07D /* PixelView.swift */; };
-		09BAD40429D6F08200DBE427 /* PixelsLibrary.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0923389429D615D800F76B04 /* PixelsLibrary.framework */; };
-		09BAD40529D6F08200DBE427 /* PixelsLibrary.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0923389429D615D800F76B04 /* PixelsLibrary.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		09DEDE6A2A12DB2F00543264 /* PixelsLibrary in Frameworks */ = {isa = PBXBuildFile; productRef = 09DEDE692A12DB2F00543264 /* PixelsLibrary */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,7 +39,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				09BAD40529D6F08200DBE427 /* PixelsLibrary.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -55,6 +53,7 @@
 		0930FB7129D5EBD800E196BC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		0930FB7329D5EBD800E196BC /* PixelsExampleApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PixelsExampleApp.entitlements; sourceTree = "<group>"; };
 		0930FB7529D5EBD800E196BC /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		09ADDEB32A13704700F2B037 /* PixelsAppleOS */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = PixelsAppleOS; path = ..; sourceTree = "<group>"; };
 		09B95A6429D6237B00E1E07D /* PixelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -63,7 +62,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				09BAD40429D6F08200DBE427 /* PixelsLibrary.framework in Frameworks */,
+				09DEDE6A2A12DB2F00543264 /* PixelsLibrary in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -90,6 +89,7 @@
 		0930FB6129D5EBD800E196BC = {
 			isa = PBXGroup;
 			children = (
+				09ADDEB32A13704700F2B037 /* PixelsAppleOS */,
 				0930FB6C29D5EBD800E196BC /* PixelsExampleApp */,
 				0930FB6B29D5EBD800E196BC /* Products */,
 				0923388D29D615D800F76B04 /* Frameworks */,
@@ -142,6 +142,9 @@
 			dependencies = (
 			);
 			name = PixelsExampleApp;
+			packageProductDependencies = (
+				09DEDE692A12DB2F00543264 /* PixelsLibrary */,
+			);
 			productName = PixelsExampleApp;
 			productReference = 0930FB6A29D5EBD800E196BC /* PixelsExampleApp.app */;
 			productType = "com.apple.product-type.application";
@@ -439,6 +442,13 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		09DEDE692A12DB2F00543264 /* PixelsLibrary */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PixelsLibrary;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 0930FB6229D5EBD800E196BC /* Project object */;
 }

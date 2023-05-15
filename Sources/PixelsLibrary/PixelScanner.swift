@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import Bridging
+import BluetoothLE
 
 fileprivate struct ManufacturerData: Codable, Sendable {
     var companyId: UInt16 = 0

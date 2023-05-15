@@ -8,7 +8,7 @@
 import Foundation
 import Combine
 import CoreBluetooth
-import Bridging
+import BluetoothLE
 
 /// The different possible connection statuses of a Pixels die.
 public enum PixelStatus {

@@ -10,25 +10,6 @@
 #import <CoreBluetooth/CoreBluetooth.h>
 
 /**
- * @brief Peripheral request error codes.
- * @ingroup Apple_Objective-C
- */
-typedef NS_ENUM(NSInteger, SGBlePeripheralRequestError)
-{
-    /// Peripheral got disconnected while executing request.
-    SGBlePeripheralRequestErrorDisconnected,
-    
-    /// Peripheral not in proper state to execute request.
-    SGBlePeripheralRequestErrorInvalidCall,
-    
-    /// Peripheral request has some invalid parameters.
-    SGBlePeripheralRequestErrorInvalidParameters,
-    
-    /// Peripheral request got canceled.
-    SGBlePeripheralRequestErrorCanceled,
-};
-
-/**
  * @brief Peripheral got disconnected.
  * @ingroup Apple_Objective-C
  */

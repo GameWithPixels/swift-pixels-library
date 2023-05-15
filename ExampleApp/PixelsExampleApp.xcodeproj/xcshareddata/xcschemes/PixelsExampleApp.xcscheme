@@ -14,20 +14,6 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "0930FBE829D5F5B700E196BC"
-               BuildableName = "PixelsLibrary.framework"
-               BlueprintName = "PixelsLibrary"
-               ReferencedContainer = "container:../PixelsLibrary/PixelsLibrary.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
-         <BuildActionEntry
-            buildForTesting = "YES"
-            buildForRunning = "YES"
-            buildForProfiling = "YES"
-            buildForArchiving = "YES"
-            buildForAnalyzing = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
                BlueprintIdentifier = "0930FB6929D5EBD800E196BC"
                BuildableName = "PixelsExampleApp.app"
                BlueprintName = "PixelsExampleApp"
