@@ -25,20 +25,21 @@ fileprivate struct ServiceData: Codable, Sendable {
 /// A protocol that provides updates on the use of a Pixels die.
 public protocol PixelScannerDelegate: AnyObject {
     /// Tells the delegate that the scanner bluetooth state changed.
-    /// Be sure to wait for the state to be ``.poweredOn`` before initiating a scan.
+    /// Be sure to wait for the state to be `poweredOn` before initiating a scan.
     func scanner(_ scanner: PixelScanner, didChangeBluetoothState state: CBManagerState)
 
     /// Tells the delegate that the scanner either started or stopped scanning for Pixels dice.
     func scanner(_ scanner: PixelScanner, didChangeScanningState isScanning: Bool)
 
     /// Tells the delegate that the scanner discovered a new Pixels die.
-    /// - Remark: ``scanner(_:didUpdateScannedPixel:)`` is also invoked on such an event.
+    /// - Remark: ``scanner(_:didUpdateScannedPixel:)-65u`` is also invoked on such an event.
     func scanner(_ scanner: PixelScanner, didDiscoverPixel scannedPixel: ScannedPixel)
 
     /// Tells the delegate that the scanner either discovered a new Pixels die or got new information about an already discovered one.
     func scanner(_ scanner: PixelScanner, didUpdateScannedPixel scannedPixel: ScannedPixel)
 }
 
+/// Provides a default empty implementations for all delegate functions.
 public extension PixelScannerDelegate {
     func scanner(_ scanner: PixelScanner, didChangeBluetoothState state: CBManagerState) {}
     func scanner(_ scanner: PixelScanner, didChangeScanningState isScanning: Bool) {}
@@ -52,12 +53,21 @@ public extension PixelScannerDelegate {
 /// ``stopScan()`` to interrupt it.
 /// All Pixels dice that are turned on, within range and not yet connected
 /// should appear in the ``scannedPixels`` array after scanning for a few seconds.
-/// Be sure to wait for the scanner to have ``isBluetoothReady`` set to true before initiating a scan.
+/// Be sure to wait for the scanner to have ``isBluetoothOn`` set to true before initiating a scan.
 ///
 /// Because scanning for Bluetooth devices can impact battery life,
 /// it is recommended to only turn on scanning when necessary.
 ///
 /// All the functionalities are accessed through the class ``shared`` singleton object.
+///
+/// To enable Bluetooth in your MacOS application, check "Bluetooth" in the "Signing & Capabilities"
+/// tab of the app project settings.
+///
+/// Also, for both MacOS and iOS, the `NSBluetoothAlwaysUsageDescription` key is required in the
+/// `Information Property List` in order to get permissions to access Bluetooth capabilities.
+/// Add the "Privacy - Bluetooth Always Usage Description" entry in the `Info` tab of the app
+/// project settings.
+/// You may specify a message that is displayed to the user, such as "Connect to Pixels dice".
 ///
 /// - Remark: The class properties are updated asynchronously on the main thread
 ///           and its methods should be called on the main thread too.

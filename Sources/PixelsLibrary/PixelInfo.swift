@@ -22,25 +22,25 @@ public protocol PixelInfo {
     /// The number of LEDs for this Pixels die.
     var ledCount: Int { get }
 
-    /// The Pixel design and color.
+    /// The Pixels die design and color.
     var designAndColor: PixelDesignAndColor { get }
 
-    /// The Pixel firmware build date.
+    /// The firmware build date of the Pixels die.
     var firmwareDate: Date { get }
 
-    /// The last RSSI value notified by the Pixel.
+    /// The last RSSI value measured by this Pixels die.
     var rssi: Int { get }
 
-    /// The Pixel battery level (percentage).
+    /// The Pixels die battery level (percentage).
     var batteryLevel: Int { get }
 
-    /// Whether the Pixel battery is charging or not.
+    /// Whether the Pixels die battery is charging or not.
     /// Also 'true' if fully charged but still on charger.
     var isCharging: Bool { get }
 
-    /// The Pixel roll state.
+    /// The Pixels die roll state.
     var rollState: PixelRollState { get }
 
-    /// The Pixel face value that is currently facing up.
+    /// The Pixels die face value that is currently facing up.
     var currentFace: Int { get }
 }

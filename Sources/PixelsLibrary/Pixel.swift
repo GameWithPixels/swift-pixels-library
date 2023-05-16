@@ -27,7 +27,7 @@ fileprivate struct MessageSubscription {
     let handler: MessageHandler
 }
 
-/// A protocol that provides updates on the use of a Pixels die.
+/// A protocol that provides updates on the state and communications with a Pixels die.
 public protocol PixelDelegate: AnyObject {
     /// Tells the delegate that the connection status of the Pixels die changed.
     func pixel(_ pixel: Pixel, didChangeStatus status: PixelStatus)
@@ -56,6 +56,7 @@ public protocol PixelDelegate: AnyObject {
     func pixel(_ pixel: Pixel, didReceiveMessage message: PixelMessage)
 }
 
+/// Provides a default empty implementations for all delegate functions.
 public extension PixelDelegate {
     func pixel(_ pixel: Pixel, didChangeStatus status: PixelStatus) {}
     func pixel(_ pixel: Pixel, didChangeFirmwareDate firmwareDate: Date) {}
@@ -69,8 +70,17 @@ public extension PixelDelegate {
 
 /// Represents a Pixels die.
 ///
-/// Most of its methods require the instance to be connected to the Pixel device.
+/// Most of the class methods require the instance to be connected to the actual device.
 /// Call the ``connect()`` method to initiate a connection.
+///
+/// To get notified about rolls and other events, either observe the instance using the `Combine`
+/// framework or set the ``delegate`` property to an object implementing some of the ``PixelDelegate``
+/// protocol functions.
+///
+/// When checking for rolls by observing the ``currentFace`` property, make sure to also check
+/// the ``rollState`` and ``isReady`` properties to determine if the face change is due to a roll
+/// that has just completed.
+///
 /// - Remark: The class properties are updated asynchronously on the main thread
 ///           and its methods should be called on the main thread too.
 @MainActor
@@ -85,7 +95,7 @@ public class Pixel: PixelInfo, ObservableObject {
     // A published for received messages
     private let _messagesPublisher = PassthroughSubject<PixelMessage, PixelError>()
     
-    /// The delegate object specified to receive property change events.
+    /// The delegate object specified to receive state change and communication events.
     public weak var delegate: PixelDelegate?;
 
     /// Gets the Pixel last known connection status.
@@ -110,7 +120,8 @@ public class Pixel: PixelInfo, ObservableObject {
     public private(set) var designAndColor: PixelDesignAndColor
     @Published
     public private(set) var firmwareDate: Date
-    /// - Remark: Call ``reportRssi(activate:minimumInterval:)`` to start monitoring RSSI.
+    /// The last RSSI value measured by this Pixels die.
+    /// - Remark: Call ``reportRSSI(activate:minimumInterval:)`` to start monitoring RSSI.
     @Published
     public private(set) var rssi: Int
     @Published
@@ -176,7 +187,7 @@ public class Pixel: PixelInfo, ObservableObject {
                 // Setup our instance
                 try await internalSetup()
 
-                // Contact Pixel to retreive info
+                // Contact Pixel to retrieve info
                 _ = try await sendMessage(ofType: .whoAreYou, andWaitForResponse: .iAmADie)
 
                 // Update status
