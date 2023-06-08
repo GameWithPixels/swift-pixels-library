@@ -1,7 +1,8 @@
 # PixelsLibrary
 
-This repository is a Swift Package with the source code of the Pixels Library
-for MacOS >= 10.15 and iOS >= 13.
+Swift Package with the source code of the Pixels Library for MacOS >= 10.15 and iOS >= 13.
+
+Use XCode "Package Dependency" feature with the URL of this repository to add it to your project.
 
 An example app that runs on both systems is also included.
 
