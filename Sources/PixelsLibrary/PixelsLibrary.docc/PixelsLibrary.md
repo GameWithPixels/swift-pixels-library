@@ -6,6 +6,20 @@ This source code of this package is available on [GitHub](
     https://github.com/GameWithPixels/swift-pixels-library.git
 ).
 
+## Foreword
+
+Pixels are full of LEDs, smarts and no larger than regular dice, they can be
+customized to light up when and how you desire.
+Check our [website](https://gamewithpixels.com/) for more information.
+
+> **Warning**
+> Before jumping into programming please make sure to read our Pixels developer's
+> [guide](https://github.com/GameWithPixels/.github/blob/main/doc/DevelopersGuide.md).
+
+Please open a [ticket](
+    https://github.com/GameWithPixels/swift-pixels-library/issues
+) on GitHub if you're having any issue.
+
 ## Overview
 
 This library supports scanning for and connecting to Pixels Bluetooth peripherals
