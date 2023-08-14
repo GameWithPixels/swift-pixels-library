@@ -1,4 +1,4 @@
-# PixelsLibrary
+# Swift Pixels Library
 
 Swift Package with the source code of the Pixels Library for MacOS >= 10.15 and iOS >= 13.
 
