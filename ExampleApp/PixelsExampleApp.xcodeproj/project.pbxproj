@@ -53,7 +53,7 @@
 		0930FB7129D5EBD800E196BC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		0930FB7329D5EBD800E196BC /* PixelsExampleApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PixelsExampleApp.entitlements; sourceTree = "<group>"; };
 		0930FB7529D5EBD800E196BC /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		09ADDEB32A13704700F2B037 /* PixelsAppleOS */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = PixelsAppleOS; path = ..; sourceTree = "<group>"; };
+		09ADDEB32A13704700F2B037 /* SwiftPixelsLibrary */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = SwiftPixelsLibrary; path = ..; sourceTree = "<group>"; };
 		09B95A6429D6237B00E1E07D /* PixelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -89,7 +89,7 @@
 		0930FB6129D5EBD800E196BC = {
 			isa = PBXGroup;
 			children = (
-				09ADDEB32A13704700F2B037 /* PixelsAppleOS */,
+				09ADDEB32A13704700F2B037 /* SwiftPixelsLibrary */,
 				0930FB6C29D5EBD800E196BC /* PixelsExampleApp */,
 				0930FB6B29D5EBD800E196BC /* Products */,
 				0923388D29D615D800F76B04 /* Frameworks */,
