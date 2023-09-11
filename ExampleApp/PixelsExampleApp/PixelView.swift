@@ -46,7 +46,7 @@ struct PixelView: View {
                     Button("Blink") {
                         Task {
                             do {
-                                try await pixel.blink(duration: 1, color: 0x101000, count: 3)
+                                try await pixel.blink(duration: 1, rgbColor: 0x101000, count: 3)
                             } catch {
                                 lastError = error
                             }

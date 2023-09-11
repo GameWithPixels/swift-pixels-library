@@ -187,9 +187,6 @@ public class Pixel: PixelInfo, ObservableObject {
                 // Setup our instance
                 try await internalSetup()
                 
-                // Contact Pixel to retrieve info
-                _ = try await sendMessage(ofType: .whoAreYou, andWaitForResponse: .iAmADie)
-                
                 // Update status
                 if status == .identifying {
                     print("Pixel \(name) is connected and ready")
@@ -347,14 +344,14 @@ public class Pixel: PixelInfo, ObservableObject {
     ///
     /// - Parameters:
     ///   - duration: Total duration of the animation in seconds.
-    ///   - color: Blink color.
+    ///   - rgbColor: Blink color.
     ///   - count: Number of blinks.
     ///   - fade: Amount of in and out fading, 0: sharp transition, 1: maximum fading.
-    public func blink(duration: Double, color: Int, count: Int = 1, fade: Double = 1) async throws {
+    public func blink(duration: Double, rgbColor: Int, count: Int = 1, fade: Double = 1) async throws {
         let blink = Blink(
             count: UInt8(count),
             duration: UInt16(duration * 1000),
-            color: UInt32(color),
+            color: UInt32(rgbColor),
             fade: UInt8(255 * fade))
         _ = try await sendMessage(blink, andWaitForResponse: .blinkAck)
     }
@@ -436,6 +433,9 @@ public class Pixel: PixelInfo, ObservableObject {
         } else {
             throw PixelError.missingWriteCharacteristic
         }
+                
+        // Contact Pixel to retrieve info
+        _ = try await sendMessage(ofType: .whoAreYou, andWaitForResponse: .iAmADie)
     }
     
     /// Send data to the Pixel.
@@ -503,57 +503,55 @@ public class Pixel: PixelInfo, ObservableObject {
                     let levelChanged = batteryLevel != iAmADie.batteryLevelPercent
                     let newIsCharging = Pixel.isChargingOrDone(iAmADie.batteryState)
                     let chargingChanged = isCharging != newIsCharging
-                    // Update properties
+                    // Update properties and notify
                     pixelId = iAmADie.pixelId // TODO check id matches
                     ledCount = Int(iAmADie.ledCount)
                     designAndColor = iAmADie.designAndColor
                     firmwareDate = newFwDate
-                    batteryLevel = Int(iAmADie.batteryLevelPercent)
-                    isCharging = Pixel.isChargingOrDone(iAmADie.batteryState)
-                    rollState = iAmADie.rollState
-                    currentFace = Int(iAmADie.currentFaceIndex + 1)
-                    // And notify delegate
                     if dateChanged {
                         delegate?.pixel(self, didChangeFirmwareDate: firmwareDate)
                     }
+                    batteryLevel = Int(iAmADie.batteryLevelPercent)
                     if levelChanged {
                         delegate?.pixel(self, didChangeBatteryLevel: batteryLevel)
                     }
+                    isCharging = Pixel.isChargingOrDone(iAmADie.batteryState)
                     if chargingChanged {
                         delegate?.pixel(self, didChangeChargingState: isCharging)
                     }
+                    rollState = iAmADie.rollState
+                    currentFace = Int(iAmADie.currentFaceIndex + 1)
                     // Skip sending roll state to delegate as we didn't get the data
                     // from an actual roll event
                     break
                 case let roll as RollState:
                     // Update properties
-                    currentFace = Int(roll.faceIndex) + 1
                     rollState = roll.state
-                    // And always notify delegate of roll events
-                    delegate?.pixel(self, didChangeRollState: rollState, withFace: currentFace)
+                    currentFace = Int(roll.faceIndex) + 1
                     if rollState == .onFace {
+                        //  Notify rolls
                         delegate?.pixel(self, didRollOnFace: currentFace)
                     }
+                    // Always notify delegate of roll events
+                    delegate?.pixel(self, didChangeRollState: rollState, withFace: currentFace)
                 case let battery as BatteryLevel:
                     let levelChanged = batteryLevel != battery.levelPercent
                     let newIsCharging = Pixel.isChargingOrDone(battery.state)
                     let chargingChanged = isCharging != newIsCharging
-                    // Update properties
+                    // Update properties and notify
                     batteryLevel = Int(battery.levelPercent)
-                    isCharging = newIsCharging
-                    // And notify delegate
                     if levelChanged {
                         delegate?.pixel(self, didChangeBatteryLevel: batteryLevel)
                     }
+                    isCharging = newIsCharging
                     if chargingChanged {
                         delegate?.pixel(self, didChangeChargingState: isCharging)
                     }
                     break
                 case let rssiMsg as RSSI:
                     let changed = rssi != rssiMsg.value
-                    // Update properties
+                    // Update property and notify
                     rssi = Int(rssiMsg.value)
-                    // And notify delegate
                     if changed {
                         delegate?.pixel(self, didChangeRSSI: rssi)
                     }
