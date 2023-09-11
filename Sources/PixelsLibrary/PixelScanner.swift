@@ -27,14 +27,14 @@ public protocol PixelScannerDelegate: AnyObject {
     /// Tells the delegate that the scanner bluetooth state changed.
     /// Be sure to wait for the state to be `poweredOn` before initiating a scan.
     func scanner(_ scanner: PixelScanner, didChangeBluetoothState state: CBManagerState)
-
+    
     /// Tells the delegate that the scanner either started or stopped scanning for Pixels dice.
     func scanner(_ scanner: PixelScanner, didChangeScanningState isScanning: Bool)
-
+    
     /// Tells the delegate that the scanner discovered a new Pixels die.
     /// - Remark: ``scanner(_:didUpdateScannedPixel:)-65u`` is also invoked on such an event.
     func scanner(_ scanner: PixelScanner, didDiscoverPixel scannedPixel: ScannedPixel)
-
+    
     /// Tells the delegate that the scanner either discovered a new Pixels die or got new information about an already discovered one.
     func scanner(_ scanner: PixelScanner, didUpdateScannedPixel scannedPixel: ScannedPixel)
 }
@@ -78,27 +78,27 @@ public class PixelScanner: ObservableObject {
     
     /// The delegate object specified to receive property change events.
     public weak var delegate: PixelScannerDelegate?;
-
+    
     /// Indicates the state of the CoreBluetooth manager.
     ///
     /// - Remark: It is recommended to observe this value and update the
     ///           app accordingly.
     @Published public private(set) var bluetoothState: CBManagerState
-
+    
     /// Shorthand that indicates if Bluetooth is turned on and available for use.
     public var isBluetoothOn: Bool {
         bluetoothState == .poweredOn
     }
-
+    
     /// Indicates whether a scan for Pixels dice is currently running.
     @Published public private(set) var isScanning: Bool = false
-
+    
     /// The list of discovered Pixels during scans.
     @Published public private(set) var scannedPixels: [ScannedPixel] = []
-
+    
     /// The shared singleton object.
     public static let shared = PixelScanner()
-
+    
     /// Initialize the instance.
     private init() {
         weak var weakSelf: PixelScanner? = nil
@@ -203,7 +203,7 @@ public class PixelScanner: ObservableObject {
             }
         }
     }
-
+    
     //
     // Pixel management
     //

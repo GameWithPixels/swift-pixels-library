@@ -31,26 +31,26 @@ fileprivate struct MessageSubscription {
 public protocol PixelDelegate: AnyObject {
     /// Tells the delegate that the connection status of the Pixels die changed.
     func pixel(_ pixel: Pixel, didChangeStatus status: PixelStatus)
-
+    
     /// Tells the delegate that the Pixels die got a new firmware
     func pixel(_ pixel: Pixel, didChangeFirmwareDate firmwareDate: Date)
-
+    
     /// Tells the delegate that the measured RSSI with the Pixels die changed.
     /// - Remark: Call ``Pixel/reportRSSI(activate:minimumInterval:)`` to start monitoring RSSI.
     func pixel(_ pixel: Pixel, didChangeRSSI rssi: Int)
-
+    
     /// Tells the delegate that the Pixels die battery level changed.
     func pixel(_ pixel: Pixel, didChangeBatteryLevel batteryLevel: Int)
-
+    
     /// Tells the delegate that the Pixels die charging status changed.
     func pixel(_ pixel: Pixel, didChangeChargingState isCharging: Bool)
-
+    
     /// Tells the delegate that the Pixels die roll state or the current face changed.
     func pixel(_ pixel: Pixel, didChangeRollState rollState: PixelRollState, withFace face: Int)
-
+    
     /// Tells the delegate that the Pixels die completed a roll.
     func pixel(_ pixel: Pixel, didRollOnFace face: Int)
-
+    
     /// Tells the delegate that the Pixels die instance received a message.
     /// In other words the message was send by the actual die and received by the Pixel object.
     func pixel(_ pixel: Pixel, didReceiveMessage message: PixelMessage)
@@ -87,26 +87,26 @@ public extension PixelDelegate {
 public class Pixel: PixelInfo, ObservableObject {
     // The underlying peripheral for the die
     private let _peripheral: SGBlePeripheralQueue
-
+    
     // Pixel Bluetooth characteristics
     private var _notifyCharacteristic: CBCharacteristic?
     private var _writeCharacteristic: CBCharacteristic?
-
+    
     // A published for received messages
     private let _messagesPublisher = PassthroughSubject<PixelMessage, PixelError>()
     
     /// The delegate object specified to receive state change and communication events.
     public weak var delegate: PixelDelegate?;
-
+    
     /// Gets the Pixel last known connection status.
     @Published
     public private(set) var status: PixelStatus
-
+    
     /// Shorthand property that indicates if the Pixel status is "ready".
     public var isReady: Bool {
         status == .ready
     }
-
+    
     // PixelInfo implementation
     @Published
     public private(set) var systemId: UUID
@@ -152,10 +152,10 @@ public class Pixel: PixelInfo, ObservableObject {
         isCharging = scannedPixel.isCharging
         rollState = scannedPixel.rollState
         currentFace = scannedPixel.currentFace
-
+        
         // Create peripheral queue for communicating with Pixels die over Bluetooth
         _peripheral = SGBlePeripheralQueue(peripheral: scannedPixel.peripheral, centralManagerDelegate: central)
-
+        
         // Subscribe to peripheral connection events
         _peripheral.connectionEventHandler = { ev, reason in
             Task { @MainActor [weak self] in
@@ -177,19 +177,19 @@ public class Pixel: PixelInfo, ObservableObject {
                 }
             }
         }
-
+        
         // Then prepare our instance for communications with the Pixel
         if status == .connecting {
             // Notify we're connected and proceeding to die identification
             setStatus(.identifying)
-
+            
             do {
                 // Setup our instance
                 try await internalSetup()
-
+                
                 // Contact Pixel to retrieve info
                 _ = try await sendMessage(ofType: .whoAreYou, andWaitForResponse: .iAmADie)
-
+                
                 // Update status
                 if status == .identifying {
                     print("Pixel \(name) is connected and ready")
@@ -222,6 +222,7 @@ public class Pixel: PixelInfo, ObservableObject {
         try await withCheckedThrowingContinuation { (cont: VCC) in
             // Cancel on-going requests
             _peripheral.cancelAll()
+            // TODO unsubscribe
             // And disconnect
             _peripheral.queueDisconnect() { error in
                 if let error {
@@ -357,7 +358,7 @@ public class Pixel: PixelInfo, ObservableObject {
             fade: UInt8(255 * fade))
         _ = try await sendMessage(blink, andWaitForResponse: .blinkAck)
     }
-
+    
     /// Process peripheral connection events.
     ///
     /// - Parameters:
@@ -408,7 +409,7 @@ public class Pixel: PixelInfo, ObservableObject {
         if let notify, let write {
             _notifyCharacteristic = notify
             _writeCharacteristic = write
-
+            
             // Subscribe to notify characteristic
             let pixelName = name
             try await withCheckedThrowingContinuation { (cont: VCC) in
@@ -424,8 +425,8 @@ public class Pixel: PixelInfo, ObservableObject {
                     if let error {
                         cont.resume(throwing: error)
                     } else {
-                       cont.resume()
-                   }
+                        cont.resume()
+                    }
                 }
             }
         } else if service == nil {
@@ -495,7 +496,7 @@ public class Pixel: PixelInfo, ObservableObject {
                 }
             }
             else if let msg = Pixel.decodeMessage(data: data) {
-                switch (msg){
+                switch (msg) {
                 case let iAmADie as IAmADie:
                     let newFwDate = Date(timeIntervalSince1970: TimeInterval(iAmADie.buildTimestamp))
                     let dateChanged = firmwareDate != newFwDate
@@ -503,7 +504,7 @@ public class Pixel: PixelInfo, ObservableObject {
                     let newIsCharging = Pixel.isChargingOrDone(iAmADie.batteryState)
                     let chargingChanged = isCharging != newIsCharging
                     // Update properties
-                    pixelId = iAmADie.pixelId
+                    pixelId = iAmADie.pixelId // TODO check id matches
                     ledCount = Int(iAmADie.ledCount)
                     designAndColor = iAmADie.designAndColor
                     firmwareDate = newFwDate
@@ -570,7 +571,7 @@ public class Pixel: PixelInfo, ObservableObject {
             }
         }
     }
-
+    
     /// Decode the message data.
     ///
     /// - Parameter data: Message data.
@@ -585,6 +586,6 @@ public class Pixel: PixelInfo, ObservableObject {
     }
     
     private static func isChargingOrDone(_ state:PixelBatteryState) -> Bool {
-       return state == .charging || state == .trickleCharge || state == .done
+        return state == .charging || state == .trickleCharge || state == .done
     }
 }
