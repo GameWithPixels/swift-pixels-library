@@ -171,7 +171,7 @@ public class PixelScanner: ObservableObject {
     ///            being turned off, the user not having authorized the app to access
     ///            Bluetooth, etc.
     @MainActor
-    public func startScan(keepPrevious: Bool = false, allowDuplicates: Bool = false) {
+    public func start(keepPrevious: Bool = false, allowDuplicates: Bool = false) {
         if !keepPrevious {
             clear()
         }
@@ -183,7 +183,7 @@ public class PixelScanner: ObservableObject {
     
     /// Stops scanning for Pixels.
     @MainActor
-    public func stopScan() {
+    public func stop() {
         _central.centralManager.stopScan()
         setIsScanning(false);
     }

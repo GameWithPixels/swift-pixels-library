@@ -23,9 +23,9 @@ struct ContentView: View {
                 // Show start/stop scan button
                 Button(scanner.isScanning ? "Stop Pixels Scan" : "Start Pixels Scan") {
                     if !scanner.isScanning {
-                        scanner.startScan()
+                        scanner.start()
                     } else {
-                        scanner.stopScan()
+                        scanner.stop()
                     }
                 }
                 .buttonStyle(ButtonWithBorder())
