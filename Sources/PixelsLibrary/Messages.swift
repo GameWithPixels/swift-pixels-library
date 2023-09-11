@@ -46,7 +46,7 @@ public struct IAmADie: PixelMessage {
     /// Amount of available flash.
     public var availableFlashSize: UInt16 = 0
     
-    /// Unix timestamp for the date of the firmware.
+    /// UNIX timestamp for the date of the firmware.
     public var buildTimestamp: UInt32 = 0
     
     // Roll state

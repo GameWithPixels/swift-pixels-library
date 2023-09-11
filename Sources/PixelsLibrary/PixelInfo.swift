@@ -13,34 +13,34 @@ public protocol PixelInfo {
     /// The unique id assigned by the OS to Pixel Bluetooth peripheral.
     var systemId: UUID { get }
     
-    /// The unique Pixel id for the die.
+    /// The unique Pixel id of the device.
     var pixelId: UInt32 { get }
     
     /// The Pixel name.
     var name: String { get }
     
-    /// The number of LEDs for this Pixels die.
+    /// The number of LEDs of the Pixel.
     var ledCount: Int { get }
     
-    /// The Pixels die design and color.
+    /// The design and color of the Pixel.
     var designAndColor: PixelDesignAndColor { get }
     
-    /// The firmware build date of the Pixels die.
+    /// The firmware build date of the Pixel.
     var firmwareDate: Date { get }
     
-    /// The last RSSI value measured by this Pixels die.
+    /// The last RSSI value measured by the Pixel.
     var rssi: Int { get }
     
-    /// The Pixels die battery level (percentage).
+    /// The Pixel battery level (percentage).
     var batteryLevel: Int { get }
     
-    /// Whether the Pixels die battery is charging or not.
-    /// Also 'true' if fully charged but still on charger.
+    /// Whether the Pixel battery is charging or not.
+    /// Set to 'true' if fully charged but still on charger.
     var isCharging: Bool { get }
     
-    /// The Pixels die roll state.
+    /// The Pixel roll state.
     var rollState: PixelRollState { get }
     
-    /// The Pixels die face value that is currently facing up.
+    /// The Pixel face value that is currently facing up.
     var currentFace: Int { get }
 }

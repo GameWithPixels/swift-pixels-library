@@ -18,11 +18,11 @@ public enum PixelError: Error, Sendable {
     case missingWriteCharacteristic
     /// Pixel notify characteristic was not found.
     case missingNotifyCharacteristic
-    /// Pixels die is either disconnected or not yet ready to start operations.
+    /// Pixel is either disconnected or not yet ready to start operations.
     case notReady
-    /// Connection to Pixels die was interrupted.
+    /// Connection to the Pixel was interrupted.
     case connectionCanceled
-    /// Waiting on response from Pixels die timed out.
+    /// Waiting on response from the Pixel timed out.
     case responseTimeout
 }
 

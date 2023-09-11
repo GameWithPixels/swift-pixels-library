@@ -10,7 +10,7 @@ import Combine
 import CoreBluetooth
 import BluetoothLE
 
-/// The different possible connection statuses of a Pixels die.
+/// The different possible connection statuses of a Pixel.
 public enum PixelStatus {
     case disconnected
     case connecting
@@ -27,31 +27,31 @@ fileprivate struct MessageSubscription {
     let handler: MessageHandler
 }
 
-/// A protocol that provides updates on the state and communications with a Pixels die.
+/// A protocol that provides updates on the state and communications with a Pixel.
 public protocol PixelDelegate: AnyObject {
-    /// Tells the delegate that the connection status of the Pixels die changed.
+    /// Tells the delegate that the connection status of the Pixel changed.
     func pixel(_ pixel: Pixel, didChangeStatus status: PixelStatus)
     
-    /// Tells the delegate that the Pixels die got a new firmware
+    /// Tells the delegate that the Pixel got a new firmware
     func pixel(_ pixel: Pixel, didChangeFirmwareDate firmwareDate: Date)
     
-    /// Tells the delegate that the measured RSSI with the Pixels die changed.
+    /// Tells the delegate that the measured RSSI with the Pixel changed.
     /// - Remark: Call ``Pixel/reportRSSI(activate:minimumInterval:)`` to start monitoring RSSI.
     func pixel(_ pixel: Pixel, didChangeRSSI rssi: Int)
     
-    /// Tells the delegate that the Pixels die battery level changed.
+    /// Tells the delegate that the Pixel battery level changed.
     func pixel(_ pixel: Pixel, didChangeBatteryLevel batteryLevel: Int)
     
-    /// Tells the delegate that the Pixels die charging status changed.
+    /// Tells the delegate that the Pixel charging status changed.
     func pixel(_ pixel: Pixel, didChangeChargingState isCharging: Bool)
     
-    /// Tells the delegate that the Pixels die roll state or the current face changed.
+    /// Tells the delegate that the Pixel roll state or the current face changed.
     func pixel(_ pixel: Pixel, didChangeRollState rollState: PixelRollState, withFace face: Int)
     
-    /// Tells the delegate that the Pixels die completed a roll.
+    /// Tells the delegate that the Pixel completed a roll.
     func pixel(_ pixel: Pixel, didRollOnFace face: Int)
     
-    /// Tells the delegate that the Pixels die instance received a message.
+    /// Tells the delegate that the Pixel instance received a message.
     /// In other words the message was send by the actual die and received by the Pixel object.
     func pixel(_ pixel: Pixel, didReceiveMessage message: PixelMessage)
 }
@@ -120,8 +120,8 @@ public class Pixel: PixelInfo, ObservableObject {
     public private(set) var designAndColor: PixelDesignAndColor
     @Published
     public private(set) var firmwareDate: Date
-    /// The last RSSI value measured by this Pixels die.
-    /// - Remark: Call ``reportRSSI(activate:minimumInterval:)`` to start monitoring RSSI.
+    /// The last RSSI value measured by this Pixel.
+    /// - Remark: Call ``reportRSSI(activate:mionimumInterval:)`` to start monitoring RSSI.
     @Published
     public private(set) var rssi: Int
     @Published
@@ -153,7 +153,7 @@ public class Pixel: PixelInfo, ObservableObject {
         rollState = scannedPixel.rollState
         currentFace = scannedPixel.currentFace
         
-        // Create peripheral queue for communicating with Pixels die over Bluetooth
+        // Create peripheral queue for communicating with the Pixel over Bluetooth
         _peripheral = SGBlePeripheralQueue(peripheral: scannedPixel.peripheral, centralManagerDelegate: central)
         
         // Subscribe to peripheral connection events
@@ -164,7 +164,7 @@ public class Pixel: PixelInfo, ObservableObject {
         }
     }
     
-    /// Asynchronously tries to connect to the Pixel. Throws on connection error.
+    /// Asynchronously tries to connect to the die. Throws on connection error.
     public func connect() async throws {
         // TODO implement connection timeout
         // First connect to the peripheral
@@ -178,7 +178,7 @@ public class Pixel: PixelInfo, ObservableObject {
             }
         }
         
-        // Then prepare our instance for communications with the Pixel
+        // Then prepare our instance for communications with the die
         if status == .connecting {
             // Notify we're connected and proceeding to die identification
             setStatus(.identifying)
@@ -213,7 +213,7 @@ public class Pixel: PixelInfo, ObservableObject {
         }
     }
     
-    /// Cancel all on-going requests and immediately disconnects the Pixel.
+    /// Cancel all on-going requests and immediately disconnects from the die.
     public func disconnect() async throws {
         let pixelName = name
         try await withCheckedThrowingContinuation { (cont: VCC) in
@@ -325,7 +325,7 @@ public class Pixel: PixelInfo, ObservableObject {
         return try await send(Data([type.rawValue]), andWaitFor: responseType, timeout: timeout)
     }
     
-    /// Requests Pixel to regularly send its measured RSSI value.
+    /// Requests the Pixel to regularly send its measured RSSI value.
     ///
     /// - Parameters:
     ///   - activate: Whether to turn or turn off this feature.
@@ -335,12 +335,12 @@ public class Pixel: PixelInfo, ObservableObject {
         try await sendMessage(RequestRSSI(requestMode: activate ? .automatic : .off, minInterval: UInt16(minimumInterval)))
     }
     
-    /// Requests Pixel to turn itself off.
+    /// Requests the Pixel to turn itself off.
     public func turnOff() async throws {
         try await sendMessage(ofType: .sleep, withoutAck: true)
     }
     
-    /// Requests Pixel to blink and wait for a confirmation.
+    /// Requests the Pixel to blink and wait for a confirmation.
     ///
     /// - Parameters:
     ///   - duration: Total duration of the animation in seconds.
@@ -584,6 +584,6 @@ public class Pixel: PixelInfo, ObservableObject {
     }
     
     private static func isChargingOrDone(_ state:PixelBatteryState) -> Bool {
-        return state == .charging || state == .trickleCharge || state == .done
+       return state == .charging || state == .trickleCharge || state == .done
     }
 }
