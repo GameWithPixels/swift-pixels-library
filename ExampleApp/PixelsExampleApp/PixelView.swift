@@ -33,6 +33,7 @@ struct PixelView: View {
                             }
                         }
                     }
+                    .buttonStyle(ButtonWithBorder())
                 } else {
                     Button("Disconnect") {
                         Task {
@@ -43,6 +44,7 @@ struct PixelView: View {
                             }
                         }
                     }
+                    .buttonStyle(ButtonWithBorder())
                     Button("Blink") {
                         Task {
                             do {
@@ -52,6 +54,7 @@ struct PixelView: View {
                             }
                         }
                     }
+                    .buttonStyle(ButtonWithBorder())
                 }
             }
             Text("Status: \(String(describing: pixel.status))")

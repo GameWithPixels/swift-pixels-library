@@ -28,6 +28,7 @@ struct ContentView: View {
                         scanner.stopScan()
                     }
                 }
+                .buttonStyle(ButtonWithBorder())
             }
             if scannedPixels.count == 0 {
                 Text("No Pixels found so far")
@@ -35,6 +36,7 @@ struct ContentView: View {
                 Button("Clear List") {
                     scanner.clear()
                 }
+                .buttonStyle(ButtonWithBorder())
             }
             // List of Pixels
             ScrollView {
