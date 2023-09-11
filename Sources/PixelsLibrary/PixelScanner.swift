@@ -67,7 +67,7 @@ public extension PixelScannerDelegate {
 /// `Information Property List` in order to get permissions to access Bluetooth capabilities.
 /// Add the "Privacy - Bluetooth Always Usage Description" entry in the `Info` tab of the app
 /// project settings.
-/// You may specify a message that is displayed to the user, such as "Connect to Pixels dice".
+/// You may specify a message that is displayed to the user, such as "To connect to Pixels dice.".
 ///
 /// - Remark: The class properties are updated asynchronously on the main thread
 ///           and its methods should be called on the main thread too.
@@ -165,16 +165,19 @@ public class PixelScanner: ObservableObject {
     ///   - keepPrevious: Whether to keep the results of the previous scan.
     ///                   When set to false (the default), the ``scannedPixels`` array
     ///                   is cleared.
+    ///   - allowDuplicates Whether the scan should run without duplicate filtering.
     ///
     /// - Remarks: The scan may fail to start for several reasons such as Bluetooth
     ///            being turned off, the user not having authorized the app to access
     ///            Bluetooth, etc.
     @MainActor
-    public func startScan(keepPrevious: Bool = false) {
+    public func startScan(keepPrevious: Bool = false, allowDuplicates: Bool = false) {
         if !keepPrevious {
             clear()
         }
-        _central.centralManager.scanForPeripherals(withServices: [PixelBleUuids.service]);
+        _central.centralManager.scanForPeripherals(
+            withServices: [PixelBleUuids.service],
+            options: allowDuplicates ? [CBCentralManagerScanOptionAllowDuplicatesKey: true] : nil);
         setIsScanning(_central.centralManager.isScanning)
     }
     
