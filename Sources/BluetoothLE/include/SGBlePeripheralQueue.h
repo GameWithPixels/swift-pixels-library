@@ -38,7 +38,7 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * @note A request keep a strong reference to the instance so the later won't be de-allocated
  *       until the queue is empty.
- * 
+ *
  * @ingroup Apple_Objective-C
  */
 @interface SGBlePeripheralQueue : NSObject<CBPeripheralDelegate>
@@ -52,7 +52,8 @@ NS_ASSUME_NONNULL_BEGIN
     NSArray<CBUUID *> *_requiredServices;
     NSUInteger _discoveringServicesCounter;
     SGBleConnectionEventReason _disconnectReason;
-    
+    bool _isReady;
+
     // Last RSSI
     int _rssi;
 
@@ -61,13 +62,13 @@ NS_ASSUME_NONNULL_BEGIN
     NSMutableArray<SGBleRequest *> *_pendingRequests; // Always synchronize access to this list
 
     // Read notifications
-    void (^_valueReadHandler)(CBCharacteristic *characteristic, NSError * _Nullable error);
-    NSMapTable<CBCharacteristic *, void (^)(CBCharacteristic *characteristic, NSError *  _Nullable error)> *_valueChangedHandlers;
+    SGBleCharacteristicValueEventHandler _valueReadHandler;
+    NSMapTable<CBCharacteristic *, SGBleCharacteristicValueEventHandler> *_valueChangedHandlers;
 }
 
 // Property getters
 - (CBPeripheral *)peripheral;
-- (bool)isConnected;
+- (bool)isReady;
 - (int)rssi;
 //! @endcond
 
@@ -77,17 +78,19 @@ NS_ASSUME_NONNULL_BEGIN
 @property(readonly, getter=peripheral) CBPeripheral *peripheral;
 
 /**
- * @brief Indicates whether the peripheral is connected.
+ * @brief Indicates whether the peripheral is connected and has discovered its services.
  */
-@property(readonly, getter=isConnected) bool isConnected;
+@property(readonly, getter=isReady) bool isReady;
 
 /**
  * @brief Gets the last read value of the Received Signal Strength Indicator (RSSI).
  */
 @property(readonly, getter=rssi) int rssi;
 
-@property(strong) SGBleConnectionEventHandler2 connectionEventHandler;
-
+/**
+ * @brief Callback for notifying connection status changes of the peripheral.
+ */
+@property(strong) void (^ _Nullable connectionEventHandler)(SGBlePeripheralQueue *peripheralQueue, SGBleConnectionEvent connectionEvent, SGBleConnectionEventReason reason);
 
 //! \name Initialization
 //! @{
@@ -155,7 +158,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param valueReadHandler The handler for notifying of the read value and the request status.
  */
 - (void)queueReadValueForCharacteristic:(CBCharacteristic *)characteristic
-                       valueReadHandler:(void (^)(CBCharacteristic *characteristic, NSError * _Nullable error))valueReadHandler;
+                       valueReadHandler:(void (^)(SGBlePeripheralQueue *peripheralQueue, CBCharacteristic *characteristic, NSError *_Nullable error))valueReadHandler;
 
 /**
  * @brief Queues a request to write the value of specified service's characteristic.
@@ -183,7 +186,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param completionHandler The handler for notifying of the request result.
  */
 - (void)queueSetNotifyValueForCharacteristic:(CBCharacteristic *)characteristic
-                         valueChangedHandler:(void (^)(CBCharacteristic *characteristic, NSError * _Nullable error))valueChangedHandler
+                         valueChangedHandler:(void (^ _Nullable)(SGBlePeripheralQueue *peripheralQueue, CBCharacteristic *characteristic, NSError * _Nullable error))valueChangedHandler
                            completionHandler:(void (^)(NSError * _Nullable error))completionHandler;
 
 //! @}

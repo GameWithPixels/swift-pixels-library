@@ -1,5 +1,6 @@
 #import "SGBlePeripheralQueue.h"
 #import "SGBleUtils.h"
+#import "SGBleErrors.h"
 
 #define NSLog(...) // Turn off logging
 
@@ -14,9 +15,9 @@
     return _peripheral;
 }
 
-- (bool)isConnected
+- (bool)isReady
 {
-    return _peripheral.state == CBPeripheralStateConnected;
+    return _isReady;
 }
 
 - (int)rssi
@@ -51,13 +52,13 @@
         _peripheral = peripheral;
         _peripheral.delegate = self;
         _pendingRequests = [NSMutableArray<SGBleRequest *> new];
-        _valueChangedHandlers = [NSMapTable<CBCharacteristic *, void (^)(CBCharacteristic *characteristic, NSError *error)> strongToStrongObjectsMapTable];
+        _valueChangedHandlers = [NSMapTable<CBCharacteristic *, SGBleCharacteristicValueEventHandler> strongToStrongObjectsMapTable];
         
         __weak SGBlePeripheralQueue *weakSelf = self;
         SGBleConnectionEventHandler handler =
         ^(CBPeripheral *peripheral, SGBleConnectionEvent connectionEvent, NSError *error)
         {
-            // Be sure to not use self directly (or implictly by referencing a property)
+            // Be sure to not use self directly (or implicitly by referencing a property)
             // otherwise it creates a strong reference to itself and prevents the instance's deallocation
             SGBlePeripheralQueue *strongSelf = weakSelf;
             if (strongSelf)
@@ -101,7 +102,7 @@
                             strongSelf->_disconnectReason = SGBleConnectionEventReasonSuccess;
                             if (reason == SGBleConnectionEventReasonCanceled)
                             {
-                                error = SGBleCanceledError;
+                                error = SGBleRequestCanceledError;
                             }
                         }
                         else if (!disconnecting)
@@ -135,7 +136,7 @@
                     }
                         
                     default:
-                        NSLog(@">> PeripheralConnectionEvent = ???"); //TODO
+                        NSLog(@">> PeripheralConnectionEvent = ???"); // TODO
                         break;
                 }
             }
@@ -204,15 +205,15 @@
 }
 
 - (void)queueReadValueForCharacteristic:(CBCharacteristic *)characteristic
-                    valueReadHandler:(void (^)(CBCharacteristic *characteristic, NSError *error))valueReadHandler
+                    valueReadHandler:(SGBleCharacteristicValueEventHandler)valueReadHandler
 {
     NSLog(@">> queueReadValueForCharacteristic");
     
     SGBleRequestExecuteHandler block = ^{
         if (!characteristic || !valueReadHandler)
         {
-            NSLog(@">> ReadValueForCharacteristic -> invalid parameters");
-            return SGBleInvalidParametersError;
+            NSLog(@">> ReadValueForCharacteristic -> invalid parameter");
+            return SGBleInvalidParameterError;
         }
         
         NSLog(@">> ReadValueForCharacteristic");
@@ -237,7 +238,7 @@
         if (!characteristic || !data)
         {
             NSLog(@">> WriteValue -> invalid parameters");
-            return SGBleInvalidParametersError;
+            return SGBleInvalidParameterError;
         }
         
         NSLog(@">> WriteValue");
@@ -255,17 +256,17 @@
 }
 
 - (void)queueSetNotifyValueForCharacteristic:(CBCharacteristic *)characteristic
-                         valueChangedHandler:(void (^)(CBCharacteristic *characteristic, NSError *error))valueChangedHandler
+                         valueChangedHandler:(SGBleCharacteristicValueEventHandler)valueChangedHandler
                            completionHandler:(void (^)(NSError *error))completionHandler
 {
     NSLog(@">> queueSetNotifyValueForCharacteristic");
     
     SGBleRequestExecuteHandler block = ^{
-        //TODO fail if already subscribed
+        // TODO fail if already subscribed
         if (!characteristic || !valueChangedHandler)
         {
             NSLog(@">> SetNotifyValueForCharacteristic -> invalid parameters");
-            return SGBleInvalidParametersError;
+            return SGBleInvalidParameterError;
         }
         
         NSLog(@">> SetNotifyValueForCharacteristic");
@@ -301,7 +302,7 @@
 
             // Cancel the running request
             NSLog(@">> Queue canceled while running request of type %@", [SGBleRequest requestTypeToString:requestType]);
-            [self qReportRequestResult:SGBleCanceledError forRequestType:requestType];
+            [self qReportRequestResult:SGBleRequestCanceledError forRequestType:requestType];
         
             // If were trying to connect, cancel connection immediately
             if (requestType == SGBleRequestTypeConnect)
@@ -313,7 +314,7 @@
             // Cancel pending requests
             for (SGBleRequest *request in requestsToCancel)
             {
-                [request notifyResult:SGBleCanceledError];
+                [request notifyResult:SGBleRequestCanceledError];
             }
         }
     });
@@ -441,9 +442,10 @@
                         reason:(SGBleConnectionEventReason)reason
 {
     NSLog(@">> Notifying connection event: %ld, reason: %ld", (long)connectionEvent, (long)reason);
+    _isReady = connectionEvent == SGBleConnectionEventReady;
     if (_connectionEventHandler)
     {
-        _connectionEventHandler(connectionEvent, reason);
+        _connectionEventHandler(self, connectionEvent, reason);
     }
 }
 
@@ -468,12 +470,9 @@
 
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverServices:(NSError *)error
 {
-    if (error) {
-        NSLog(@">> peripheral:didDiscoverServices:error => %@", error);
-    }
-    
     if (error)
     {
+        NSLog(@">> peripheral:didDiscoverServices:error => %@", error);
         [self internalDisconnect:SGBleConnectionEventReasonUnknown];
     }
     else if (![self hasAllRequiredServices:peripheral.services])
@@ -495,12 +494,9 @@
 
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverCharacteristicsForService:(CBService *)service error:(NSError *)error
 {
-    if (error) {
-        NSLog(@">> peripheral:didDiscoverCharacteristicsForService:error => %@", error);
-    }
-    
     if (error)
     {
+        NSLog(@">> peripheral:didDiscoverCharacteristicsForService:error => %@", error);
         [self internalDisconnect:SGBleConnectionEventReasonUnknown];
     }
     else
@@ -523,26 +519,27 @@
 
 - (void)peripheral:(CBPeripheral *)peripheral didUpdateValueForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error
 {
-    if (error) {
+    if (error)
+    {
         NSLog(@">> peripheral:didUpdateValueForCharacteristic:error => %@", error);
     }
     
     if (_valueReadHandler)
     {
         // The value read handler is meant to be used just once
-        void (^valueReadHandler)(CBCharacteristic *characteristic, NSError *error) = _valueReadHandler;
+        SGBleCharacteristicValueEventHandler valueReadHandler = _valueReadHandler;
         _valueReadHandler = nil;
 
         // And report result using the handler
         [self qReportRequestResult:error forRequestType:SGBleRequestTypeReadValue customNotifier:^(NSError *error) {
-            valueReadHandler(characteristic, error);
+            valueReadHandler(self, characteristic, error);
         }];
     }
     
-    void (^notifyHandler)(CBCharacteristic *characteristic, NSError *error) = [_valueChangedHandlers objectForKey:characteristic];
-    if (notifyHandler)
+    SGBleCharacteristicValueEventHandler valueChangedHandler = [_valueChangedHandlers objectForKey:characteristic];
+    if (valueChangedHandler)
     {
-        notifyHandler(characteristic, error);
+        valueChangedHandler(self, characteristic, error);
     }
 }
 
@@ -552,7 +549,8 @@
 
 - (void)peripheral:(CBPeripheral *)peripheral didWriteValueForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error
 {
-    if (error) {
+    if (error)
+    {
         NSLog(@">> peripheral:didWriteValueForCharacteristic:error => %@", error);
     }
     
@@ -569,7 +567,8 @@
 
 - (void)peripheral:(CBPeripheral *)peripheral didUpdateNotificationStateForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error
 {
-    if (error) {
+    if (error)
+    {
         NSLog(@">> peripheral:didUpdateNotificationStateForCharacteristic:error => %@", error);
     }
     
@@ -578,7 +577,8 @@
 
 - (void)peripheral:(CBPeripheral *)peripheral didReadRSSI:(NSNumber *)RSSI error:(NSError *)error
 {
-    if (error) {
+    if (error)
+    {
         NSLog(@">> peripheral:didReadRSSI:error => %@", error);
     }
     
