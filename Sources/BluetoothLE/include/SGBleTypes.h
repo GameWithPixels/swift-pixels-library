@@ -6,6 +6,9 @@
 #ifndef SGBleTypes_h
 #define SGBleTypes_h
 
+// Forward declaration
+@class SGBlePeripheralQueue;
+
 /**
  * @defgroup Apple_Objective-C
  * @brief A collection of Objective-C classes that provides a simplified access to
@@ -17,13 +20,13 @@
  * The Systemic Games Bluetooth Low Energy library for Apple devices provides classes for
  * scanning for Bluetooth Low Energy (BLE) peripherals, connecting to and communicating with them.
  * Those classes are based on the Apple's Core Bluetooth framework.
- * 
+ *
  * The SGBleCentralManagerDelegate class implements the Apple
  * <a href="https://developer.apple.com/documentation/corebluetooth/cbcentralmanagerdelegate">
  * CBCentralManagerDelegate</a> protocol.
  * It stores and notifies of discovered BLE peripherals, also notifies of peripherals
  * connection events and of the host device Bluetooth radio state changes.
- * 
+ *
  * The SGBlePeripheralQueue class implements the Apple
  * <a href="https://developer.apple.com/documentation/corebluetooth/cbperipheraldelegate">
  * CBPeripheralDelegate</a> protocol.
@@ -96,29 +99,35 @@ typedef NS_ENUM(NSInteger, SGBleConnectionEventReason)
 };
 
 /**
- * @brief Peripheral request error codes.
+ * @brief Error codes.
  * @ingroup Apple_Objective-C
  */
-typedef NS_ENUM(NSInteger, SGBlePeripheralRequestError)
+typedef NS_ENUM(NSInteger, SGBleError)
 {
-    /// Peripheral got disconnected while executing request.
-    SGBlePeripheralRequestErrorDisconnected,
+    /// Application out of memory.
+    SGBleErrorOutOfMemory,
     
-    /// Peripheral not in proper state to execute request.
-    SGBlePeripheralRequestErrorInvalidCall,
+    /// Call not implemented.
+    SGBleErrorNotImplemented,
     
-    /// Peripheral request has some invalid parameters.
-    SGBlePeripheralRequestErrorInvalidParameters,
+    /// Peripheral request has one or more invalid parameters.
+    SGBleErrorInvalidParameter,
+    
+    /// Bluetooth or peripheral not in proper state to execute request.
+    SGBleErrorInvalidState,
     
     /// Peripheral request got canceled.
-    SGBlePeripheralRequestErrorCanceled,
+    SGBleErrorRequestCanceled,
+    
+    /// Peripheral got disconnected while executing request.
+    SGBleErrorPeripheralDisconnected,
 };
 
 /**
  * @brief Peripheral discovery handler.
  * @ingroup Apple_Objective-C
  */
-typedef void (^SGBlePeripheralDiscoveryHandler)(CBPeripheral * _Nonnull peripheral, NSDictionary<NSString *, id> * _Nonnull advertisementData, NSNumber * _Nonnull RSSI);
+typedef void (^SGBlePeripheralDiscoveryHandler)(CBPeripheral * _Nonnull peripheral, NSDictionary<NSString *, id> * _Nonnull advertisementData, NSNumber * _Nonnull rssi);
 
 /**
  * @brief Peripheral connection event handler.
@@ -126,6 +135,10 @@ typedef void (^SGBlePeripheralDiscoveryHandler)(CBPeripheral * _Nonnull peripher
  */
 typedef void (^SGBleConnectionEventHandler)(CBPeripheral * _Nonnull peripheral, SGBleConnectionEvent connectionEvent, NSError * _Nullable error);
 
-typedef void (^SGBleConnectionEventHandler2)(SGBleConnectionEvent connectionEvent, SGBleConnectionEventReason reason);
+/**
+ * @brief Peripheral connection event handler.
+ * @ingroup Apple_Objective-C
+ */
+typedef void (^SGBleCharacteristicValueEventHandler)(SGBlePeripheralQueue * _Nonnull peripheralQueue, CBCharacteristic * _Nonnull characteristic, NSError * _Nullable error);
 
 #endif /* SGBleTypes_h */
