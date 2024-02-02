@@ -52,7 +52,8 @@ NS_ASSUME_NONNULL_BEGIN
     NSArray<CBUUID *> *_requiredServices;
     NSUInteger _discoveringServicesCounter;
     SGBleConnectionEventReason _disconnectReason;
-    
+    bool _isReady;
+
     // Last RSSI
     int _rssi;
 
