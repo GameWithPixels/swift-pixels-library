@@ -7,37 +7,54 @@
 
 import Foundation
 
-/// Available combinations of Pixel designs and colors.
-public enum PixelDesignAndColor: UInt8, Codable, Sendable, CustomStringConvertible {
+/// The different types of dice.
+public enum PixelDieType: UInt8, Codable, Sendable, CustomStringConvertible {
     case unknown
-    case generic
-    case v3Orange
-    case v4BlackClear
-    case v4WhiteClear
-    case v5Grey
-    case v5White
-    case v5Black
-    case v5Gold
-    case onyxBlack
-    case hematiteGrey
-    case midnightGalaxy
-    case auroraSky
+    case d4
+    case d6
+    case d8
+    case d10
+    case d00
+    case d12
+    case d20
+    case d6pipped
+    case d6fudge
     
     public var description : String {
         switch self {
         case .unknown: return "unknown"
-        case .generic: return "generic"
-        case .v3Orange: return "v3Orange"
-        case .v4BlackClear: return "v4BlackClear"
-        case .v4WhiteClear: return "v4WhiteClear"
-        case .v5Grey: return "v5Grey"
-        case .v5White: return "v5White"
-        case .v5Black: return "v5Black"
-        case .v5Gold: return "v5Gold"
+        case .d4: return "d4"
+        case .d6: return "d6"
+        case .d8: return "d8"
+        case .d10: return "d10"
+        case .d00: return "d00"
+        case .d12: return "d12"
+        case .d20: return "d20"
+        case .d6pipped: return "d6pipped"
+        case .d6fudge: return "d6fudge"
+        }
+    }
+}
+
+/// Available Pixels dice colorways.
+public enum PixelColorway: UInt8, Codable, Sendable, CustomStringConvertible {
+    case unknown
+    case onyxBlack
+    case hematiteGrey
+    case midnightGalaxy
+    case auroraSky
+    case clear
+    case custom = 0xff
+
+    public var description : String {
+        switch self {
+        case .unknown: return "unknown"
         case .onyxBlack: return "onyxBlack"
         case .hematiteGrey: return "hematiteGrey"
         case .midnightGalaxy: return "midnightGalaxy"
         case .auroraSky: return "auroraSky"
+        case .clear: return "clear"
+        case .custom: return "custom"
         }
     }
 }

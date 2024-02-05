@@ -15,7 +15,8 @@ public struct ScannedPixel: PixelInfo {
     public var pixelId: UInt32
     public var name: String
     public var ledCount: Int
-    public var designAndColor: PixelDesignAndColor
+    public var colorway: PixelColorway
+    public var dieType: PixelDieType
     public var firmwareDate: Date
     public var rssi: Int
     public var batteryLevel: Int
