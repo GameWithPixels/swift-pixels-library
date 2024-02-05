@@ -22,8 +22,11 @@ public protocol PixelInfo {
     /// The number of LEDs of the Pixel.
     var ledCount: Int { get }
     
-    /// The design and color of the Pixel.
-    var designAndColor: PixelDesignAndColor { get }
+    /// The die color.
+    var colorway: PixelColorway { get }
+    
+    /// The type of die.
+    var dieType: PixelDieType { get }
     
     /// The firmware build date of the Pixel.
     var firmwareDate: Date { get }

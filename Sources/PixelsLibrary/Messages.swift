@@ -33,9 +33,10 @@ public struct IAmADie: PixelMessage {
     public var ledCount: UInt8 = 0
     
     /// Die look.
-    public var designAndColor = PixelDesignAndColor.generic;
+    public var colorway = PixelColorway.unknown;
     
-    internal var _padding: UInt8 = 0
+    /// Type of die.
+    internal var dieType = PixelDieType.unknown;
     
     /// Hash of the uploaded profile.
     public var dataSetHash: UInt32 = 0
@@ -54,7 +55,7 @@ public struct IAmADie: PixelMessage {
     /// Current roll state.
     public var rollState = PixelRollState.unknown
     
-    /// Face index (if applicable), starts at 0.
+    /// Face index, starts at 0..
     public var currentFaceIndex: UInt8 = 0
     
     // Battery level

@@ -117,7 +117,9 @@ public class Pixel: PixelInfo, ObservableObject {
     @Published
     public private(set) var ledCount: Int
     @Published
-    public private(set) var designAndColor: PixelDesignAndColor
+    public private(set) var colorway: PixelColorway
+    @Published
+    public private(set) var dieType: PixelDieType
     @Published
     public private(set) var firmwareDate: Date
     /// The last RSSI value measured by this Pixel.
@@ -145,7 +147,8 @@ public class Pixel: PixelInfo, ObservableObject {
         pixelId = scannedPixel.pixelId
         name = scannedPixel.name
         ledCount = scannedPixel.ledCount
-        designAndColor = scannedPixel.designAndColor
+        colorway = scannedPixel.colorway
+        dieType = scannedPixel.dieType
         firmwareDate = scannedPixel.firmwareDate
         rssi = scannedPixel.rssi
         batteryLevel = scannedPixel.batteryLevel
@@ -157,7 +160,7 @@ public class Pixel: PixelInfo, ObservableObject {
         _peripheral = SGBlePeripheralQueue(peripheral: scannedPixel.peripheral, centralManagerDelegate: central)
         
         // Subscribe to peripheral connection events
-        _peripheral.connectionEventHandler = { ev, reason in
+        _peripheral.connectionEventHandler = { _, ev, reason in
             Task { @MainActor [weak self] in
                 await self?.onConnectionEvent(ev, reason: reason)
             }
@@ -410,7 +413,7 @@ public class Pixel: PixelInfo, ObservableObject {
             // Subscribe to notify characteristic
             let pixelName = name
             try await withCheckedThrowingContinuation { (cont: VCC) in
-                _peripheral.queueSetNotifyValue(for: notify) { [weak self] characteristic, error in
+                _peripheral.queueSetNotifyValue(for: notify) { [weak self] _, characteristic, error in
                     if let error {
                         print("Pixel \(pixelName) error: on notified value, got \(error)")
                     } else if let data = characteristic.value {
@@ -506,7 +509,8 @@ public class Pixel: PixelInfo, ObservableObject {
                     // Update properties and notify
                     pixelId = iAmADie.pixelId // TODO check id matches
                     ledCount = Int(iAmADie.ledCount)
-                    designAndColor = iAmADie.designAndColor
+                    colorway = iAmADie.colorway
+                    dieType = iAmADie.dieType
                     firmwareDate = newFwDate
                     if dateChanged {
                         delegate?.pixel(self, didChangeFirmwareDate: firmwareDate)

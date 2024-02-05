@@ -11,8 +11,8 @@ import BluetoothLE
 fileprivate struct ManufacturerData: Codable, Sendable {
     var companyId: UInt16 = 0
     var ledCount: UInt8 = 0
-    var designAndColor: PixelDesignAndColor
-    var rollState: PixelRollState
+    var designAndColor: UInt8 = 0
+    var rollState: PixelRollState = PixelRollState.unknown
     var faceIndex: UInt8 = 0
     var battery: UInt8 = 0
 }
@@ -128,7 +128,8 @@ public class PixelScanner: ObservableObject {
                             pixelId: serv.pixelId,
                             name: localName ?? "",
                             ledCount: Int(manuf.ledCount),
-                            designAndColor: manuf.designAndColor,
+                            colorway: PixelColorway(rawValue: manuf.designAndColor & 0xf) ?? PixelColorway.unknown,
+                            dieType: PixelDieType(rawValue: (manuf.designAndColor >> 4) & 0xf) ?? PixelDieType.unknown,
                             firmwareDate: Date(timeIntervalSince1970: TimeInterval(serv.firmwareDate)),
                             rssi: Int(truncating: rssi),
                             batteryLevel: Int(manuf.battery & 0x7f),
