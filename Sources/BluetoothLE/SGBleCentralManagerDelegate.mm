@@ -108,7 +108,7 @@
     {
         _stateUpdateHandler(central.state);
     }
-    if (central.state != CBManagerStatePoweredOn)
+    if (!self.isBluetoothOn)
     {
         // Notify all peripherals disconnected
         NSArray<CBPeripheral *> *peripherals = nil;
@@ -116,12 +116,9 @@
         {
             peripherals = _peripheralsConnectionEventHandlers.allKeys;
         }
-        if (peripherals)
+        for (CBPeripheral *peripheral in peripherals)
         {
-            for (CBPeripheral *peripheral in peripherals)
-            {
-                [self raiseConnectionEventForPeripheral:peripheral connectionEvent:SGBleConnectionEventDisconnected error:SGBleBluetoothStateError];
-            }
+            [self raiseConnectionEventForPeripheral:peripheral connectionEvent:SGBleConnectionEventDisconnected error:SGBleBluetoothStateError];
         }
     }
 }
