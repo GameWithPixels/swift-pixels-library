@@ -64,8 +64,8 @@ public enum PixelRollState: UInt8, Codable, Sendable, CustomStringConvertible {
     /// The Pixel roll state could not be determined.
     case unknown
     
-    /// The Pixel is resting in a position with a face up.
-    case onFace
+    /// The die finished rolling and is now on a face, and it looked like a proper roll.
+    case rolled
     
     /// The Pixel is being handled.
     case handling
@@ -76,13 +76,17 @@ public enum PixelRollState: UInt8, Codable, Sendable, CustomStringConvertible {
     /// The Pixel is resting in a crooked position.
     case crooked
     
+    /// The die is not moving and, as far as we know, it has either never moved or it didn't move enough to trigger a roll.
+    case onFace
+    
     public var description : String {
         switch self {
         case .unknown: return "unknown"
-        case .onFace: return "onFace"
+        case .rolled: return "rolled"
         case .handling: return "handling"
         case .rolling: return "rolling"
         case .crooked: return "crooked"
+        case .onFace: return "onFace"
         }
     }
 }
