@@ -44,6 +44,7 @@ public enum PixelColorway: UInt8, Codable, Sendable, CustomStringConvertible {
     case midnightGalaxy
     case auroraSky
     case clear
+    case whiteAurora
     case custom = 0xff
 
     public var description : String {
@@ -54,6 +55,7 @@ public enum PixelColorway: UInt8, Codable, Sendable, CustomStringConvertible {
         case .midnightGalaxy: return "midnightGalaxy"
         case .auroraSky: return "auroraSky"
         case .clear: return "clear"
+        case .whiteAurora: return "whiteAurora"
         case .custom: return "custom"
         }
     }
